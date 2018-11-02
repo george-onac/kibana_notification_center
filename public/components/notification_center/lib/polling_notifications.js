@@ -1,6 +1,7 @@
 import { chain } from 'lodash';
 import { getVisible, addBasePath } from 'ui/chrome';
 import { addSystemApiHeader } from 'ui/system_api';
+import { toastNotifications } from 'ui/notify';
 
 export function pollingNotifications($timeout, $http, NotificationCenter, Notifier) {
   if (!getVisible()) {
@@ -21,7 +22,21 @@ export function pollingNotifications($timeout, $http, NotificationCenter, Notifi
       const notifications = data || [];
       const lastPulledAt = chain(notifications)
       .forEach(notification => {
-        notify[notification.type || 'info'](notification.content);
+        switch (notification.type) {
+          case 'error':
+          return toastNotifications.addDanger({
+            title: notification.content
+          });
+          notify[notification.type](notification.content);
+          case 'warning':
+          return toastNotifications.addWarning({
+            title: notification.content
+          });
+          default:
+          return toastNotifications.addSuccess({
+            title: notification.content
+          });
+        }
       })
       .map('timestamp')
       .max()

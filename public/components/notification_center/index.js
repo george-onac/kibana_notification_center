@@ -2,7 +2,7 @@ import { chain } from 'lodash';
 import { element } from 'angular';
 import moment from 'moment-timezone';
 import { uiModules } from 'ui/modules';
-import { notify } from 'ui/notify';
+import { notify, toastNotifications } from 'ui/notify';
 import { StoredNotifications } from './lib/stored_notifications';
 import { StoredConfig } from './lib/stored_config';
 import { pollingNotifications } from './lib/polling_notifications';
@@ -32,6 +32,7 @@ module.directive('notificationCenter', (config, NotificationCenter, $filter) => 
     restrict: 'E',
     template,
     controller: ($scope) => {
+
       const notifs = $scope.notifs = NotificationCenter.notifications;
       $scope.$watchCollection(() => notify._notifs, change => {
         const timestamp = new Date().valueOf();
@@ -43,6 +44,20 @@ module.directive('notificationCenter', (config, NotificationCenter, $filter) => 
           notifs.merge(...newNotifs);
         }
       });
+
+      $scope.$watchCollection(() => toastNotifications.list, change => {
+        const timestamp = new Date().valueOf();
+        const newNotifs = chain(change)
+        .filter(notif => !notif.timestamp)
+        .forEach(notif => notif.timestamp = timestamp)
+        .forEach(notif => notif.content = notif.title)
+        .forEach(notif => notif.type = notif.color)
+        .value();
+
+        if (newNotifs.length) {
+          notifs.merge(...newNotifs);
+        }
+      })
 
       config.watch('dateFormat', setDateFormat, $scope);
       config.watch('dateFormat:tz', setDefaultTimezone, $scope);

@@ -4,6 +4,7 @@ export function getNotificationClasses(notif = {}) {
       case 'banner':
         return 'success';
       case 'danger':
+      case 'error':
         return 'error';
       case 'warning':
         return 'warning';
@@ -12,6 +13,6 @@ export function getNotificationClasses(notif = {}) {
     };
   })(notif.type);
 
-  const icon = notif.icon || 'info-circle';
+  const icon = notif.type || 'info-circle';
   return `kuiIcon--${color} fa-${icon}`;
 };
