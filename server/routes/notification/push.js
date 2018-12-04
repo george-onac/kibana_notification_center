@@ -13,19 +13,13 @@ export function push(server) {
     path: `${constants.API_BASE_URL}/notification`,
     method: ['POST', 'PUT'],
     handler(request, reply) {
-      const { payload } = request;
-      const timestamp = Date.now();
-
-      callWithRequest(request, 'index', {
-        index: parseWithTimestamp(index, moment(timestamp)),
-        type,
-        body: extend(payload, { timestamp })
-      })
+      pushNotification(request)
       .then(resp => {
-        return reply(constants.RESPONSE.OK);
+        reply(resp);
       })
-      .catch(reply);
-
+      .catch(err => {
+        reply(err);
+      });
     },
     config: {
       validate: {
@@ -36,4 +30,24 @@ export function push(server) {
       }
     }
   });
+
+  server.expose('pushNotification', (request) => pushNotification(request));
+  function pushNotification(request) {
+    return new Promise((resolve,reject) => {
+      const { payload } = request;
+      const timestamp = Date.now();
+      callWithRequest(request, 'index', {
+        index: parseWithTimestamp(index, moment(timestamp)),
+        type,
+        body: extend(payload, { timestamp })
+      })
+      .then(resp => {
+        resolve(constants.RESPONSE.OK);
+      })
+      .catch(err => {
+        reject(err);
+      });
+    })
+  }
+
 };
