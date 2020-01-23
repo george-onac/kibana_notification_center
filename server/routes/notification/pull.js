@@ -6,39 +6,37 @@ import { parseWithWildcard } from '../../lib/parse_index_pattern';
 
 export function pull(server) {
   const index = parseWithWildcard(server.config().get('notification_center.index'));
-  const type = 'notification';
   const { callWithRequest } = server.plugins.elasticsearch.getCluster('data');
   const { maxSize } = server.config().get('notification_center.api.pull');
 
   server.route({
     path: `${constants.API_BASE_URL}/notification`,
     method: 'GET',
-    handler(request, reply) {
-      const { size, from, to } = request.query;
+    handler: async(request, h) => {
+      const { size, from, to } = request.query.value;
+      return new Promise((resolve) => {
+        callWithRequest(request, 'search', {
+          index,
+          size,
+          ignoreUnavailable: true,
+          body: (() => {
+            const rangeQueries = [];
 
-      callWithRequest(request, 'search', {
-        index,
-        type,
-        size,
-        ignoreUnavailable: true,
-        body: (() => {
-          const rangeQueries = [];
+            if (from) {
+              rangeQueries.push(set({}, 'range.timestamp.gt', moment(from).valueOf()));
+            }
 
-          if (from) {
-            rangeQueries.push(set({}, 'range.timestamp.gt', moment(from).valueOf()));
-          }
-
-          if (to) {
-            rangeQueries.push(set({}, 'range.timestamp.lt', moment(to).valueOf()));
-          }
-
-          return rangeQueries.length ? set({}, 'query.bool.must', rangeQueries) : undefined;
-        })()
-      })
-      .then(resp => {
-        return reply(get(resp, 'hits.hits', []).map(hit => hit._source));
-      })
-      .catch(reply);
+            if (to) {
+              rangeQueries.push(set({}, 'range.timestamp.lt', moment(to).valueOf()));
+            }
+            return rangeQueries.length ? set({}, 'query.bool.must', rangeQueries) : undefined;
+          })()
+        })
+        .then(resp => {
+          resolve(h.response(get(resp, 'hits.hits', []).map(hit => hit._source)));
+        })
+        .catch(h);
+      });
     },
     config: {
       validate: {

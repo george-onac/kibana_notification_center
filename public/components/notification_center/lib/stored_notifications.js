@@ -17,15 +17,6 @@ export class StoredNotifications extends Array {
     this.merge = (...items) => {
       const timestamp = new Date().valueOf();
       const freshItems = chain(items)
-      .filter(item => {
-        const mergeable = find(this, pick(item, ['type', 'content']));
-        if (mergeable) {
-          mergeable.timestamp = item.timestamp;
-          mergeable.count += (item.count || 1);
-          mergeable.stacks = union(mergeable.stacks, item.stacks);
-        }
-        return !mergeable;
-      })
       .map(item => defaults(item, { timestamp, count: 1 }))
       .value();
       const result = super.push(...freshItems);
@@ -40,7 +31,7 @@ export class StoredNotifications extends Array {
     };
 
     this.save = () => {
-      const requiredFields = ['timestamp', 'type', 'content', 'stack', 'stacks', 'title', 'icon', 'count'];
+      const requiredFields = ['timestamp', 'type', 'text', 'content', 'stack', 'stacks', 'title', 'icon', 'count'];
       const items = this.map(item => pick(item,requiredFields));
       localStorage.setItem(this.key, JSON.stringify(items));
       return this;
